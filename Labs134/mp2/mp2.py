@@ -10,23 +10,19 @@ def generate_keypair():
         public_exponent=65537,
         key_size=2048
     )
-    public_key = private_key.public_key()
-    return private_key, public_key
+    return private_key, private_key.public_key()
 
 # Save key to a file
 def save_key(key, filename, is_private=False):
-    encoding = serialization.Encoding.PEM
-    if is_private:
-        pem_data = key.private_bytes(
-            encoding=encoding,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
-        )
-    else:
-        pem_data = key.public_bytes(
-            encoding=encoding,
-            format=serialization.PublicFormat.SubjectPublicKeyInfo
-        )
+    pem_data = key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.PKCS8,
+        encryption_algorithm=serialization.NoEncryption()
+    ) if is_private else key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+
     with open(filename, "wb") as f:
         f.write(pem_data)
 
@@ -34,9 +30,7 @@ def save_key(key, filename, is_private=False):
 def load_key(filename, is_private=False):
     with open(filename, "rb") as f:
         key_data = f.read()
-    if is_private:
-        return serialization.load_pem_private_key(key_data, password=None)
-    return serialization.load_pem_public_key(key_data)
+    return serialization.load_pem_private_key(key_data, password=None) if is_private else serialization.load_pem_public_key(key_data)
 
 # Encrypt message using RSA-OAEP
 def encrypt_message(message, public_key):
@@ -51,7 +45,7 @@ def encrypt_message(message, public_key):
         )
         return base64.b64encode(ciphertext).decode()
     except Exception as e:
-        print(f"Encryption error: {e}")
+        print(f"[Error] Encryption failed: {e}")
         return None
 
 # Decrypt message using RSA-OAEP
@@ -68,7 +62,7 @@ def decrypt_message(ciphertext, private_key):
         )
         return plaintext.decode()
     except Exception as e:
-        print(f"Decryption error: {e}")
+        print(f"[Error] Decryption failed: {e}")
         return None
 
 # Sign the encrypted message
@@ -84,7 +78,7 @@ def sign_message(message, private_key):
         )
         return base64.b64encode(signature).decode()
     except Exception as e:
-        print(f"Signing error: {e}")
+        print(f"[Error] Signing failed: {e}")
         return None
 
 # Verify the signature
@@ -102,11 +96,11 @@ def verify_signature(message, signature, public_key):
         )
         return True
     except Exception as e:
-        print(f"Signature verification failed: {e}")
+        print(f"[Error] Signature verification failed: {e}")
         return False
 
-if __name__ == "__main__":
-    # Generate key pairs if they do not exist
+# Ensure key pairs exist or generate them if missing
+def ensure_keys():
     if not os.path.exists("enc_private.pem") or not os.path.exists("enc_public.pem"):
         enc_private, enc_public = generate_keypair()
         save_key(enc_private, "enc_private.pem", is_private=True)
@@ -114,7 +108,7 @@ if __name__ == "__main__":
     else:
         enc_private = load_key("enc_private.pem", is_private=True)
         enc_public = load_key("enc_public.pem")
-    
+
     if not os.path.exists("sign_private.pem") or not os.path.exists("sign_public.pem"):
         sign_private, sign_public = generate_keypair()
         save_key(sign_private, "sign_private.pem", is_private=True)
@@ -122,35 +116,46 @@ if __name__ == "__main__":
     else:
         sign_private = load_key("sign_private.pem", is_private=True)
         sign_public = load_key("sign_public.pem")
-    
+
+    return enc_private, enc_public, sign_private, sign_public
+
+if __name__ == "__main__":
+    enc_private, enc_public, sign_private, sign_public = ensure_keys()
+
     # Read message from file
-    with open("message.txt", "r") as f:
+    message_file = "message.txt"
+    if not os.path.exists(message_file):
+        print(f"[Error] {message_file} not found.")
+        exit(1)
+
+    with open(message_file, "r") as f:
         message = f.read().strip()
-    
-    # Encrypt-Then-Sign
+
+    # Encrypt-Then-Sign process
     encrypted_message = encrypt_message(message, enc_public)
     if encrypted_message:
         signature = sign_message(encrypted_message, sign_private)
+
         if signature:
             with open("ciphertext_and_signature.txt", "w") as f:
                 f.write(f"Encrypted: {encrypted_message}\n")
                 f.write(f"Signature: {signature}\n")
-            
-            print(f"Encrypted: {encrypted_message}")
-            print(f"Signature: {signature}")
-            
-            # Verify-Then-Decrypt
+            print("[Success] Encryption and signing complete.")
+
+            # Verify-Then-Decrypt process
             if verify_signature(encrypted_message, signature, sign_public):
                 decrypted_message = decrypt_message(encrypted_message, enc_private)
+
                 if decrypted_message:
                     with open("decrypted.txt", "w") as f:
                         f.write(decrypted_message)
-                    print(f"Decrypted: {decrypted_message}")
+                    print("[Success] Decryption and verification complete.")
+                    print("Decrypted message:", decrypted_message)
                 else:
-                    print("Failed to decrypt message!")
+                    print("[Error] Failed to decrypt message.")
             else:
-                print("Signature verification failed!")
+                print("[Error] Signature verification failed.")
         else:
-            print("Failed to sign message!")
+            print("[Error] Failed to sign message.")
     else:
-        print("Failed to encrypt message!")
+        print("[Error] Failed to encrypt message.")
