@@ -1,50 +1,56 @@
 # 🔐 RSA-OAEP Authenticated Encryption — Encrypt-Then-Sign
 
-A Python program that encrypts a short message using **RSA-OAEP** and authenticates it using **RSA-PSS** digital signatures.
+This program encrypts and decrypts short ASCII messages (≤140 characters) using RSA-OAEP and ensures authenticity using RSA-PSS signatures. It follows the encrypt-then-sign approach, generating and using separate RSA key pairs for encryption and signing.
 
-✨ Uses the **Encrypt-Then-Sign** approach  
-🔒 Ensures **confidentiality, authenticity, and integrity**  
-✅ Built with the `cryptography` library — no custom crypto implementations
+# 📁 Files Included
+mp2.py – Main Python script
 
----
+- message.txt – Input file containing the plaintext message
 
-## 📂 Project Structure
+- ciphertext_and_signature.txt – Output file containing the encrypted message and its signature
+ 
+- decrypted.txt – Decrypted output after verification
 
-. ├── mp2.py # Main program ├── message.txt # Input message (max 140 ASCII chars) ├── decrypted.txt # Output after successful decryption ├── ciphertext_and_signature.txt # Stores ciphertext and signature ├── enc_private.pem # Encryption private key ├── enc_public.pem # Encryption public key ├── sign_private.pem # Signing private key └── sign_public.pem # Signing public key
+- enc_private.pem, enc_public.pem – RSA keys for encryption/decryption
 
+- sign_private.pem, sign_public.pem – RSA keys for signing/verification
 
----
+# 🚀 How It Works
 
-## 🚀 How It Works
+## Key Generation
+- The script automatically generates key pairs (enc_*.pem and sign_*.pem) if they don't already exist.
 
-1. **🔑 Key Generation**
-   - Automatically creates RSA key pairs for encryption and signing (`2048-bit`) if they don’t already exist.
+## Encrypt-Then-Sign
 
-2. **🔐 Encrypt-Then-Sign**
-   - Reads the message from `message.txt`
-   - Encrypts using **RSA-OAEP** with SHA-256 and the **encryption public key**
-   - Signs the ciphertext using **RSA-PSS** with SHA-256 and the **signing private key**
-   - Saves to `ciphertext_and_signature.txt`
+- eads the message from message.txt.
 
-3. **🧾 Verify-Then-Decrypt**
-   - Verifies signature using the **signing public key**
-   - If valid, decrypts the message with the **encryption private key**
-   - Writes decrypted message to `decrypted.txt`
+- Encrypts the message using RSA-OAEP with the encryption public key.
 
----
+- Signs the ciphertext using RSA-PSS with the signing private key.
 
-## 💻 Usage
+- Saves the ciphertext and signature to ciphertext_and_signature.txt.
 
-### 1. 🔧 Install Dependencies
+## Verify-Then-Decrypt
 
-```bash
-pip install cryptography
+- Verifies the signature using the signing public key.
 
-2. ✏️ Prepare Message
-Write your message (≤140 characters) into message.txt.
+- If verification succeeds, decrypts the ciphertext using the encryption private key.
 
-3. ▶️ Run the Program
-bash
-Copy
-Edit
-python mp2.py
+- Saves the decrypted message to decrypted.txt.
+
+# 🔧 How to Run
+## Step 1: Prepare Your Message
+- Write your message (max 140 ASCII characters) into message.txt.
+## Run the Script
+- `python mp2.py`
+This performs encryption, signing, verification, and decryption in one go.
+
+# 📦 Dependencies
+- Python 3.6+
+- cryptography
+Install via pip:
+`pip install cryptography`
+
+# 🔐 Why Use Encrypt-Then-Sign?
+- Confidentiality: RSA-OAEP ensures only the intended recipient can decrypt the message.
+- Integrity & Authenticity: RSA-PSS digital signatures verify that the ciphertext hasn't been tampered with and confirm the sender's identity.
